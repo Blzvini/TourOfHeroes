@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TourOfHeroes.Data;
 
@@ -10,9 +11,11 @@ using TourOfHeroes.Data;
 namespace TourOfHeroes.Migrations
 {
     [DbContext(typeof(DbHeroContext))]
-    partial class DbHeroContextModelSnapshot : ModelSnapshot
+    [Migration("20230330124100_atualizando-campo-status-herois")]
+    partial class atualizandocampostatusherois
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.3");

@@ -14,5 +14,6 @@ namespace TourOfHeroes.Models
         public string? UpdatedBy { get; set; }
         [MaxLength(100)]
         public string? DeletedBy { get; set; }
+        public string? Status { get; set; }
     }
 }

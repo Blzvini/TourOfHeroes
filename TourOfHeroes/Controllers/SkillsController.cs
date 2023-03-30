@@ -41,6 +41,7 @@ namespace TourOfHeroes.Controllers
                 result.Name = skill.Name;
                 result.Damage = skill.Damage;
                 result.Description = skill.Description;
+                result.Status = skill.Status;
 
                 return Ok(result);
             }
@@ -64,6 +65,7 @@ namespace TourOfHeroes.Controllers
                 newSkill.Name = skill.Name;
                 newSkill.Damage = skill.Damage;
                 newSkill.Description = skill.Description;
+                newSkill.Status = "Actived";
 
                 SkillModel createdSkill = await _service.Create(newSkill);
                 return Ok(createdSkill);
@@ -112,6 +114,7 @@ namespace TourOfHeroes.Controllers
                 }
 
                 skill.DeletedAt = null;
+                skill.Status = "Actived";
                 skill.UpdatedAt = DateTime.Now;
                 await _service.Update(skill, id);
 
@@ -132,6 +135,7 @@ namespace TourOfHeroes.Controllers
                     throw new Exception("This skill does not exist.");
                 }
 
+                skill.Status = "Deleted";
                 skill.DeletedAt = DateTime.Now;
                 await _service.Update(skill, id);
 

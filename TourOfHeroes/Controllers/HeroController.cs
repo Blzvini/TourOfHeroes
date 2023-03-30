@@ -44,6 +44,7 @@ namespace TourOfHeroes.Controllers
 
                 result.Id = id;
                 result.Name = hero.Name;
+                result.Status = hero.Status;
 
                 return Ok(result);
             }
@@ -64,6 +65,7 @@ namespace TourOfHeroes.Controllers
                     CreatedAt = DateTime.Now,
                     Name = hero.Name,
                     CreatedBy = hero.CreatedBy,
+                    Status = "Actived",
                     Skills = new List<SkillModel>()
                 };
 
@@ -77,7 +79,8 @@ namespace TourOfHeroes.Controllers
                         {
                             Name = skillDto.Name,
                             Damage = skillDto.Damage,
-                            Description = skillDto.Description
+                            Description = skillDto.Description,
+                            Status = "Actived"
                         };
                         await _skillsService.Create(skillModel);
                     }
@@ -86,7 +89,14 @@ namespace TourOfHeroes.Controllers
                 }
 
                 HeroModel createdHero = await _service.Create(newHero);
-                return Ok(createdHero);
+
+                var response = new
+                {
+                    Hero = createdHero,
+                    Skills = newHero.Skills
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -94,31 +104,68 @@ namespace TourOfHeroes.Controllers
             }
         }
 
-
-
-
         // Update a Hero
         [HttpPut("{id}")]
-        public async Task<ActionResult<HeroModel>> Update(UpdateHeroInputDto heroModel, int id)
+        public async Task<ActionResult<HeroModel>> UpdateHero(int id, [FromBody] UpdateHeroInputDto hero)
         {
-            HeroModel heroById = await _service.SearchById(id);
-
-            if (heroById == null)
+            try
             {
-                throw new Exception($"Hero for this id: {id} not found.");
-            }
+                // Busca o herói pelo ID
+                var existingHero = await _service.SearchById(id);
 
-            if (heroById.DeletedAt == null)
+                // Verifica se o herói foi encontrado
+                if (existingHero == null)
+                {
+                    throw new Exception($"Hero for this id: {id} not found.");
+                }
+
+                // Atualiza as propriedades do herói
+                existingHero.Name = hero.Name;
+                existingHero.UpdatedBy = hero.UpdateBy;
+                existingHero.UpdatedAt = DateTime.Now;
+
+                // Cria uma nova lista de habilidades para o herói atualizado
+                var updatedSkills = new List<SkillModel>();
+
+                // Itera sobre as habilidades enviadas na solicitação
+                foreach (var skillDto in hero.Skills)
+                {
+                    // Verifica se a habilidade já existe no banco de dados
+                    var existingSkill = await _skillsService.GetSkillByName(skillDto.Name);
+
+                    // Se a habilidade não existe, cria uma nova
+                    if (existingSkill == null)
+                    {
+                        var newSkill = new SkillModel
+                        {
+                            Name = skillDto.Name,
+                            Damage = skillDto.Damage,
+                            Description = skillDto.Description,
+                            Status = "Actived"
+                        };
+
+                        existingSkill = await _skillsService.Create(newSkill);
+                    }
+
+                    // Adiciona a habilidade à lista de habilidades atualizadas
+                    updatedSkills.Add(existingSkill);
+                }
+
+                // Atualiza as habilidades do herói com a nova lista de habilidades
+                existingHero.Skills = updatedSkills;
+
+                // Salva as alterações no banco de dados
+                await _service.Update(existingHero, id);
+
+                // Retorna o herói atualizado
+                return Ok(existingHero);
+            }
+            catch (Exception ex)
             {
-                heroById.Name = heroModel.Name;
-                heroById.UpdatedBy = heroModel.UpdateBy;
-                heroById.UpdatedAt = DateTime.Now;
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
-
-            await _service.Update(heroById, id);
-
-            return heroById;
         }
+
 
         // Rollback of a deleted Hero
         [HttpPatch]
@@ -135,7 +182,9 @@ namespace TourOfHeroes.Controllers
 
                 hero.DeletedAt = null;
                 hero.UpdatedAt = DateTime.Now;
+                hero.Status = "Actived";
                 await _service.Update(hero, id);
+                
 
             }
             return Ok();
@@ -158,6 +207,7 @@ namespace TourOfHeroes.Controllers
                 }
 
                 hero.DeletedAt = DateTime.Now;
+                hero.Status = "Deleted";
                 await _service.Update(hero, id);
 
             }

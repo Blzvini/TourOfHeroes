@@ -20,7 +20,7 @@ namespace TourOfHeroes.Services
 
         public async Task<HeroModel> SearchById(int id)
         {
-            return await _dbContext.Heroes.Include(h => h.Skills).FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null);
+            return await _dbContext.Heroes.Include(h => h.Skills).FirstOrDefaultAsync(x => x.Id == id);
         }
 
         public async Task<List<HeroGetAllDto>> SearchAllheroes()
@@ -61,19 +61,22 @@ namespace TourOfHeroes.Services
             heroById.UpdatedAt = hero.UpdatedAt;
 
             // Remove as habilidades antigas do herói e adiciona as novas
-            foreach (var oldSkill in heroById.Skills.ToList())
+            heroById.Skills.Clear();
+            foreach (var skillDto in hero.Skills)
             {
-                if (!hero.Skills.Any(s => s.Id == oldSkill.Id))
+                var skillModel = await _skills.GetSkillByName(skillDto.Name);
+                if (skillModel == null)
                 {
-                    heroById.Skills.Remove(oldSkill);
+                    skillModel = new SkillModel
+                    {
+                        Name = skillDto.Name,
+                        Damage = skillDto.Damage,
+                        Description = skillDto.Description,
+                        Status = "Actived"
+                    };
+                    await _skills.Create(skillModel);
                 }
-            }
-            foreach (var newSkill in hero.Skills)
-            {
-                if (!heroById.Skills.Any(s => s.Id == newSkill.Id))
-                {
-                    heroById.Skills.Add(newSkill);
-                }
+                heroById.Skills.Add(skillModel);
             }
 
             _dbContext.Heroes.Update(heroById);
@@ -81,6 +84,7 @@ namespace TourOfHeroes.Services
 
             return heroById;
         }
+
 
         public async Task<bool> Delete(int id)
         {
